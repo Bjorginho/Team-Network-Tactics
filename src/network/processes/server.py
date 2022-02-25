@@ -1,4 +1,4 @@
-from database import ChampionsDB, MatchHistory
+from database import Champions
 from selectors import EVENT_READ, DefaultSelector
 from socket import socket, SO_REUSEADDR, SOL_SOCKET
 
@@ -9,13 +9,12 @@ sel = DefaultSelector()
 sock = socket()
 sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 sock.bind(("localhost", 5555))
-sock.listen()
+sock.listen(2)  # Maximum two connections
 sock.setblocking(False)
 sel.register(sock, EVENT_READ, True)
 
 # Databases
-CHAMPS_DB = ChampionsDB(database="TNT", collection="Champions")
-MATCH_HISTORY = MatchHistory()
+CHAMPS_DB = Champions()
 
 
 def accept(new_socket: socket):
@@ -43,6 +42,8 @@ def read(conn: socket):
         new_sentence = sentence.upper()
         # conn.send(new_sentence.encode())
         conn.send(f"Hello {conn.getsockname()}".encode())
+        champ = CHAMPS_DB.get_champion(sentence)
+        conn.send(f"You picked {champ}")
     else:
         print(f'Closing [{conn}]')
         sel.unregister(conn)
