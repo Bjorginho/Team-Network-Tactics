@@ -3,10 +3,10 @@ import json
 
 
 class ChampionsDB:
-    def __init__(self, cluster_name: str, database: str, collection: str):
+    def __init__(self, database: str, collection: str):
         self.user = "admin"
         self.__password = "admin123"
-        self.__cluster_name = cluster_name
+        self.__cluster_name = "cluster0"
         self.cluster = MongoClient(
             f"mongodb+srv://{self.user}:{self.__password}@{self.__cluster_name}.igyfh.mongodb.net/TNT?retryWrites=true&w=majority")
         self.db = self.cluster[database]
@@ -29,3 +29,12 @@ class ChampionsDB:
 
     """def delete_champ(self, name:str):
         self.collection.delete_one({"name": name})"""
+
+
+class MatchHistory:
+
+    def __init__(self):
+        pass
+
+    def get_history(self, player_name):
+        return "Not yet implemented"
