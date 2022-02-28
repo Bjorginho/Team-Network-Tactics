@@ -185,7 +185,7 @@ class Match:
         self._rounds = [{} for _ in range(self.n_rounds)]
         for round in self._rounds:
             for red_champ, blue_champ in zip(self.red_team, self.blue_team):
-                champ_names = red_champ.name + ', ' + blue_champ.name
+                champ_names = red_champ.champion + ', ' + blue_champ.champion
                 pair = pair_throw(red_champ, blue_champ)
                 if pair.red > pair.blue:
                     self._red_score += 1

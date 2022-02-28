@@ -2,8 +2,8 @@ from rich import print
 from rich.prompt import Prompt
 from rich.table import Table
 
-from champlistloader import load_some_champs
-from core import Champion, Match, Shape, Team
+from src.local.champlistloader import load_some_champs
+from src.local.core import Champion, Match, Shape, Team
 
 
 def print_available_champs(champions: dict[Champion]) -> None:
@@ -25,8 +25,7 @@ def print_available_champs(champions: dict[Champion]) -> None:
     print(available_champs)
 
 
-def input_champion(prompt: str,
-                   color: str,
+def input_champion(prompt: str, color: str,
                    champions: dict[Champion],
                    player1: list[str],
                    player2: list[str]) -> None:

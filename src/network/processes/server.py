@@ -1,59 +1,74 @@
 from database import Champions
 from selectors import EVENT_READ, DefaultSelector
-from socket import socket, SO_REUSEADDR, SOL_SOCKET
+from socket import socket, create_server
+from threading import Thread
 
-# Selector object
-sel = DefaultSelector()
-
-# Setup server socket
-sock = socket()
-sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-sock.bind(("localhost", 5555))
-sock.listen(2)  # Maximum two connections
-sock.setblocking(False)
-sel.register(sock, EVENT_READ, True)
-
-# Databases
-CHAMPS_DB = Champions()
+from src.local.game import print_available_champs
 
 
-def accept(new_socket: socket):
-    """
-    :param new_socket: incoming socket
-    :return:
-    """
-    print("[ACCEPT] ", new_socket.getsockname())
-    conn, address = new_socket.accept()  # Should be ready
-    print(f'Accepted [{conn}] from [{address}]')
-    conn.setblocking(False)  # This socket should not be blocking anything, pass Selector control of socket
-    sel.register(conn, EVENT_READ)
+class Server:
+    def __init__(self, host: str, port: int, buffer_size: int = 2048):
+        self._sock = create_server((host, port))
+        self._sock.setblocking(False)
+        self._sel = DefaultSelector()
+        self._sel.register(self._sock, EVENT_READ, True)
+        self._buffer_size = buffer_size
+        self._connections = []
+        self._champs = Champions()
+        self._match_history = None
 
+    def run(self):
+        print("Waiting for connections...")
+        while True:
+            events = self._sel.select()  # Sockets that are ready to be handled
+            for key, _ in events:
+                if key.data:
+                    self._accept(key.fileobj)
+                    self._connections.append(key.fileobj)
+                    print(self._connections)
+                else:
+                    self._handle(key.fileobj)
 
-def read(conn: socket):
-    """
-    Handle a connection
-    :param conn: connection
-    :return: Nothing
-    """
-    print("[READ] ", conn.getsockname())
-    data = conn.recv(1024)  # Should be ready
-    if data:
-        sentence = data.decode()
-        new_sentence = sentence.upper()
-        # conn.send(new_sentence.encode())
-        conn.send(f"Hello {conn.getsockname()}".encode())
-        champ = CHAMPS_DB.get_champion(sentence)
-        conn.send(f"You picked {champ}")
-    else:
-        print(f'Closing [{conn}]')
-        sel.unregister(conn)
+    def _accept(self, sock: socket):
+        conn, _ = sock.accept()
+        print(f'[ACCEPTED] {conn}')
+        conn.setblocking(False)
+        self._sel.register(conn, EVENT_READ)
 
+    def _handle(self, conn: socket):
+        print("[RECEIVED] ", conn.getsockname())
+        if data := conn.recv(self._buffer_size):
+            user_inp = data.decode().split()
+            try:
+                com = user_inp[0]
+                arg = user_inp[1]
+                match com:
+                    case "Get":
+                        print("Get")
+                    case "Change":
+                        print("Change")
+                    case "Get_all":
+                        print("Get all")
+                        all = self._champs.champs_stats
+                        print_available_champs(all)
+                #  champ = CHAMPS.get_champ_object(user_inp)
+                print("[SENDING] ", conn.getsockname())
+                conn.sendall(commands[com].encode())
+            finally:
+                conn.sendall("Server couldn't fetch your command".encode())
 
-print("Waiting for connections...")
-while True:
-    events = sel.select()  # Sockets that are ready to be handled
-    for key, _ in events:
-        if key.data:
-            accept(key.fileobj)
         else:
-            read(key.fileobj)
+            print("[CLOSING] ", conn.getsockname())
+            conn.close()
+            self._sel.unregister(conn)
+
+
+commands = {
+    "Get": "get champ!",
+    "Change": "change name!",
+    "Get_all": "get all champs!"
+}
+
+if __name__ == "__main__":
+    s = Server('localhost', 5555)
+    s.run()

@@ -1,4 +1,4 @@
-from core import Champion
+from src.local.core import Champion
 
 
 def _parse_champ(champ_text: str) -> Champion:
