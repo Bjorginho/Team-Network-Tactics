@@ -1,0 +1,58 @@
+{
+  "champions" : [
+    {
+        "name": "Vain",
+        "rock": 50,
+        "paper": 25,
+        "scissors": 25
+    },
+    {
+        "name": "Dr. Yi",
+        "rock": 10,
+        "paper": 10,
+        "scissors": 80
+    },
+    {
+        "name": "Twist",
+        "rock": 10,
+        "paper": 25,
+        "scissors": 65
+    },
+    {
+        "name": "Guan",
+        "rock": 30,
+        "paper": 35,
+        "scissors": 35
+    },
+    {
+        "name": "Siva",
+        "rock": 60,
+        "paper": 20,
+        "scissors": 20
+    },
+    {
+        "name": "Katina",
+        "rock": 20,
+        "paper": 50,
+        "scissors": 30
+    },
+    {
+        "name": "Asir",
+        "rock": 5,
+        "paper": 5,
+        "scissors": 90
+    },
+    {
+        "name": "Cactus",
+        "rock": 5,
+        "paper": 90,
+        "scissors": 5
+    },
+    {
+        "name": "Luanne",
+        "rock": 90,
+        "paper": 5,
+        "scissors": 5
+    }
+  ]
+}
