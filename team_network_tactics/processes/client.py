@@ -3,13 +3,9 @@ import rich
 from rich.prompt import Prompt
 from rich.table import Table
 from rich.table import Table
+from team_network_tactics.game import print_available_champs
 
-from network.game import print_available_champs
-
-
-def _input(prompt: str) -> str:
-    return input(prompt + ": ")
-
+print(network.game)
 
 def _build_request(team: str = "", command: str = "", arg: str = ""):
     return team + ";" + command + ";" + arg
@@ -27,7 +23,6 @@ class Client:
         self._run()
 
     def _run(self):
-        champions = []
 
         request = _build_request(command="get-team")
         self._send_request(request)
@@ -46,7 +41,7 @@ class Client:
             if data[0] == "OK":
                 rich.print(data[1])
                 break
-        print()
+
         print("---List Champs----------------------")
         # TODO: Print champ table
         request = _build_request(team=self._team, command="list-champs")
@@ -56,12 +51,12 @@ class Client:
             if not data:
                 print("From server: \n", data)
 
-        print()
+
         # TODO: Pick champions
         print("---Pick-Champs---------------------")
-        while len(champions) < 2:
+        while len(self._champs) < 2:
             champ = input("Pick champ: ")
-            if champ not in champions:
+            if champ not in self._champs:
                 request = _build_request(team=self._team, command="pick-champ", arg=champ)
                 self._send_request(request)
                 if data := self._get_response():
@@ -69,15 +64,14 @@ class Client:
                     msg = data[1]
                     if status == "OK":
                         # Ignore msg, just append champ
-                        champions.append(champ)
+                        self._champs.append(champ)
                     else:
                         # Print error message
                         print(msg)
             else:
                 print("You've already picked this champ!")
 
-        print("Your champions: ", champions)
-        print()
+        print("Your champions: ", self._champs)
 
         request = _build_request(team=self._team, command="ready")
         print("Sending: ", request)
@@ -89,12 +83,8 @@ class Client:
         # TODO: Server simulates a game
         print("---Simulate---------------------")
 
-        print()
         # TODO: Print match summary here
         print("---Match-Summary---------------------")
-
-    def _handle_response(self, resp: str):
-        pass
 
     def _send_request(self, request: str):
         self._sock.send(request.encode())
