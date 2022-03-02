@@ -3,9 +3,9 @@ import rich
 from rich.prompt import Prompt
 from rich.table import Table
 from rich.table import Table
-from team_network_tactics.game import print_available_champs
+from team_network_tactics.game import print_available_champs, print_match_summary
 import time
-import os
+import pickle
 
 
 def _build_request(team: str = "", command: str = "", arg: str = ""):
@@ -68,15 +68,8 @@ class Client:
         request = _build_request(team=self._team, command="list-champs")
         self._send_request(request)
 
-        if data := self._sock.recv(self._buffer_size).decode():
-            data = data.replace("{", "")
-            data = data.replace("}", "")
-            data = data.split(", ")
-            for row in data:
-                name, stats = row.split(":")
-                name = name.replace("'", "")
-                print(stats)
-            # print_available_champs(ast.literal_eval(data))
+        if data := self._sock.recv(self._buffer_size):
+            print_available_champs(pickle.loads(data))
 
         print("\n")
         #  Pick champions
@@ -100,17 +93,31 @@ class Client:
         print("Your champions: ", self._champs)
 
         request = _build_request(team=self._team, command="ready")
-        print("Sending: ", request)
         self._send_request(request)
-        if data := self._get_response():
-            if data[0] == "OK":
-                print("From server: \n", data)
 
-        # TODO: Server simulates a game
-        print("---Simulate---------------------")
+        wait = True
+        while wait:
+            try:
+                while data := self._get_response():
+                    if data[0] == "OK":
+                        wait = False
+                        break
+                    else:
+                        time.sleep(3)
+                        print(data[1])
+                        self._send_request(request)
+            finally:
+                continue
 
-        # TODO: Print match summary here
-        print("---Match-Summary---------------------")
+        request = _build_request(team=self._team, command="get-match-summary")
+        self._send_request(request)
+        result = None
+        while data := self._sock.recv(self._buffer_size):
+            result = pickle.loads(data)
+            break
+
+        # rich.print(result)
+        print_match_summary(result)
 
     def _send_request(self, request: str):
         self._sock.send(request.encode())

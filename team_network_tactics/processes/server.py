@@ -1,6 +1,9 @@
 from database import Champions
 from selectors import EVENT_READ, DefaultSelector
 from socket import socket, create_server
+import pickle
+from team_network_tactics.core import Match, Team
+from rich import print
 
 
 class Server:
@@ -10,10 +13,13 @@ class Server:
         self._sel = DefaultSelector()
         self._sel.register(self._sock, EVENT_READ, True)
         self._buffer_size = buffer_size
+
         self._champs = Champions()
         self._match_history = None
+
         self._taken_champs = []
         self._connections = {}
+        self._match = None
 
     def run(self):
         print("Waiting for connections...")
@@ -62,8 +68,7 @@ class Server:
                     msg = "\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n"
                     response = "OK;" + msg
                 case "list-champs":
-                    champs = self._champs.champs_stats.__repr__()
-                    response = champs
+                    response = pickle.dumps(self._champs.champs_stats)
                 case "pick-champ":
                     champ_lst = self._champs.champions
                     available = list(set(champ_lst) ^ set(self._taken_champs))
@@ -82,19 +87,51 @@ class Server:
                         msg = "Sorry, " + arg + " is taken enemy summoner!"
                         response = status + ";" + msg
                 case "ready":
-                    print("Team: ", self._connections[conn]["team"], " with: ", self._connections[conn]["champs"])
                     self._connections[conn]["ready"] = True
-                    status = "OK"
-                    msg = "You are now ready!"
+                    count = 0
+                    for connection in self._connections:
+                        if self._connections[connection]["ready"]:
+                            count += 1
+                    if count == 2:
+                        status = "OK"
+                        msg = "Both ready"
+                        if self._match is None:
+                            self._match = self._simulate_match()
+                    else:
+                        status = "ERROR"
+                        msg = "Waiting for other client."
                     response = status + ";" + msg
+                case "get-match-summary":
+                    response = pickle.dumps(self._match)
                 case _:
                     response = "ERROR;bad-request"
+
             # Respond client
-            conn.sendall(response.encode())
+            if command == "get-match-summary" or command == "list-champs":      # Commands where we have to send object
+                conn.sendall(response)
+            else:
+                conn.sendall(response.encode())
         else:
             print(f"Closing: {conn.getsockname()}")
             conn.close()
             self._sel.unregister(conn)
+
+    def _simulate_match(self):
+
+        player1, player2 = [], []
+        for conn in self._connections:
+            if self._connections[conn]["team"] == "red":
+                player1 = self._connections[conn]["champs"]
+            elif self._connections[conn]["team"] == "blue":
+                player2 = self._connections[conn]["champs"]
+
+        match = Match(
+            Team([self._champs.champs_stats[name] for name in player1]),
+            Team([self._champs.champs_stats[name] for name in player2])
+        )
+        match.play()
+
+        return match
 
 
 if __name__ == "__main__":

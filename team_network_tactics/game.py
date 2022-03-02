@@ -98,7 +98,6 @@ def main() -> None:
           '\n')
 
     champions = load_some_champs()
-    print(champions)
     print_available_champs(champions)
     print('\n')
 
@@ -118,6 +117,7 @@ def main() -> None:
         Team([champions[name] for name in player2])
     )
     match.play()
+    # print(match)
 
     # Print a summary
     print_match_summary(match)
