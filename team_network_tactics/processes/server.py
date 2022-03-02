@@ -31,6 +31,9 @@ class Server:
         print(f'Accepted: {address}')
         conn.setblocking(False)
         self._sel.register(conn, EVENT_READ)
+        self.__register_and_assign_team(conn)
+
+    def __register_and_assign_team(self, conn: socket):
         if len(self._connections) == 0:
             color = "red"
         else:
@@ -45,27 +48,27 @@ class Server:
                 team, command, arg = request[0], request[1], request[2]
                 response = ""
                 match command:
+                    case "new-connection":
+                        if len(self._connections) == 2:
+                            status = "OK"
+                            msg = "Two players connected"
+                        else:
+                            status = "ERROR"
+                            msg = "Waiting for opponent."
+                        response = status + ";" + msg
                     case "get-team":
                         msg = self._connections[conn]["team"]
-                        response = "OK;" + msg
-
+                        response = "OK" + ";" + msg
                     case "welcome":
-                        msg = "Welcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time. "
+                        msg = "\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n"
                         response = "OK;" + msg
-
-                    case "get-color":
-                        pass
                     case "list-champs":
                         champs = self._champs.champs_stats
                         status = "OK"
                         response = status + ";" + champs.keys()
-                        print("Sending: ", response)
-
                     case "pick-champ":
                         champ_lst = self._champs.champions
                         available = list(set(champ_lst) ^ set(self._taken_champs))
-                        print("All: ", champ_lst)
-                        print("Avalable: ", available)
                         if arg not in champ_lst:
                             status = "ERROR"
                             msg = "Available champs: [" + ', '.join(available) + "]"
@@ -81,17 +84,15 @@ class Server:
                             msg = "Sorry, " + arg + " is taken enemy summoner!"
                             response = status + ";" + msg
                     case "ready":
+                        print("Team: ", self._connections[conn]["team"], " with: ", self._connections[c]["champs"])
                         self._connections[conn]["ready"] = True
-                        print("Values, ", self._connections.values())
                         status = "OK"
                         msg = "You are now ready!"
                         response = status + ";" + msg
                     case _:
                         response = "ERROR;bad-request"
-                print("Response: ", response)
+                # Respond client
                 conn.sendall(response.encode())
-                for c in self._connections:
-                    print("Team: ", self._connections[c]["team"], " with: ", self._connections[c]["champs"])
             except Exception:
                 conn.sendall(f"ERROR;Bad request [{data}]".encode())
         else:

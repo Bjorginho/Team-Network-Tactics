@@ -4,8 +4,8 @@ from rich.prompt import Prompt
 from rich.table import Table
 from rich.table import Table
 from team_network_tactics.game import print_available_champs
+import time
 
-print(network.game)
 
 def _build_request(team: str = "", command: str = "", arg: str = ""):
     return team + ";" + command + ";" + arg
@@ -24,6 +24,27 @@ class Client:
 
     def _run(self):
 
+        request = _build_request(command="new-connection")
+        self._send_request(request)
+        print("Waiting for server to start game...")
+
+        wait_for_player = True
+        while wait_for_player:
+            try:
+                while data := self._get_response():
+                    if data[0] == "OK":
+                        print("Ready")
+                        wait_for_player = False
+                        break
+                    else:
+                        time.sleep(3)
+                        print(data[1])
+                        self._send_request(request)
+            finally:
+                continue
+
+        print("Get ready! A game has now started. ")
+
         request = _build_request(command="get-team")
         self._send_request(request)
 
@@ -31,7 +52,8 @@ class Client:
             if data[0] == "OK":
                 self._team = data[1]
             break
-        print("Team: ", self._team)
+
+        print(f"You were assigned Team: [ {self._team} ]")
 
         request = _build_request(team=self._team, command="welcome")
         self._send_request(request)
@@ -97,4 +119,3 @@ class Client:
 
 if __name__ == "__main__":
     Client()
-
