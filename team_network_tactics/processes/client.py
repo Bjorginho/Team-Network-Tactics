@@ -5,6 +5,7 @@ from rich.table import Table
 from rich.table import Table
 from team_network_tactics.game import print_available_champs
 import time
+import os
 
 
 def _build_request(team: str = "", command: str = "", arg: str = ""):
@@ -33,7 +34,7 @@ class Client:
             try:
                 while data := self._get_response():
                     if data[0] == "OK":
-                        print("Ready")
+                        print("Enemy connected")
                         wait_for_player = False
                         break
                     else:
@@ -43,8 +44,6 @@ class Client:
             finally:
                 continue
 
-        print("Get ready! A game has now started. ")
-
         request = _build_request(command="get-team")
         self._send_request(request)
 
@@ -53,29 +52,34 @@ class Client:
                 self._team = data[1]
             break
 
+        print("-------------GAME STARTED-------------")
         print(f"You were assigned Team: [ {self._team} ]")
 
         request = _build_request(team=self._team, command="welcome")
         self._send_request(request)
 
-        # TODO: Print welcome message here
+        #  Print welcome message
         while data := self._get_response():
             if data[0] == "OK":
                 rich.print(data[1])
                 break
 
-        print("---List Champs----------------------")
-        # TODO: Print champ table
+        #  Print champ table
         request = _build_request(team=self._team, command="list-champs")
-        print("Sending: ", request)
         self._send_request(request)
-        if data := self._get_response():
-            if not data:
-                print("From server: \n", data)
 
+        if data := self._sock.recv(self._buffer_size).decode():
+            data = data.replace("{", "")
+            data = data.replace("}", "")
+            data = data.split(", ")
+            for row in data:
+                name, stats = row.split(":")
+                name = name.replace("'", "")
+                print(stats)
+            # print_available_champs(ast.literal_eval(data))
 
-        # TODO: Pick champions
-        print("---Pick-Champs---------------------")
+        print("\n")
+        #  Pick champions
         while len(self._champs) < 2:
             champ = input("Pick champ: ")
             if champ not in self._champs:

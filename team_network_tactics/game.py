@@ -98,6 +98,7 @@ def main() -> None:
           '\n')
 
     champions = load_some_champs()
+    print(champions)
     print_available_champs(champions)
     print('\n')
 

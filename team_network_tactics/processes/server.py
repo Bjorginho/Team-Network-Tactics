@@ -44,57 +44,53 @@ class Server:
         if data := conn.recv(self._buffer_size):
             print("Request: ", data.decode())
             request = data.decode().split(";")
-            try:
-                team, command, arg = request[0], request[1], request[2]
-                response = ""
-                match command:
-                    case "new-connection":
-                        if len(self._connections) == 2:
-                            status = "OK"
-                            msg = "Two players connected"
-                        else:
-                            status = "ERROR"
-                            msg = "Waiting for opponent."
-                        response = status + ";" + msg
-                    case "get-team":
-                        msg = self._connections[conn]["team"]
-                        response = "OK" + ";" + msg
-                    case "welcome":
-                        msg = "\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n"
-                        response = "OK;" + msg
-                    case "list-champs":
-                        champs = self._champs.champs_stats
+            team, command, arg = request[0], request[1], request[2]
+            response = ""
+            match command:
+                case "new-connection":
+                    if len(self._connections) == 2:
                         status = "OK"
-                        response = status + ";" + champs.keys()
-                    case "pick-champ":
-                        champ_lst = self._champs.champions
-                        available = list(set(champ_lst) ^ set(self._taken_champs))
-                        if arg not in champ_lst:
-                            status = "ERROR"
-                            msg = "Available champs: [" + ', '.join(available) + "]"
-                            response = status + ";" + msg
-                        elif arg in available:
-                            msg = arg
-                            status = "OK"
-                            response = status + ";" + msg
-                            self._taken_champs.append(arg)
-                            self._connections[conn]["champs"].append(arg)
-                        else:
-                            status = "ERROR"
-                            msg = "Sorry, " + arg + " is taken enemy summoner!"
-                            response = status + ";" + msg
-                    case "ready":
-                        print("Team: ", self._connections[conn]["team"], " with: ", self._connections[c]["champs"])
-                        self._connections[conn]["ready"] = True
-                        status = "OK"
-                        msg = "You are now ready!"
+                        msg = "Two players connected"
+                    else:
+                        status = "ERROR"
+                        msg = "Waiting for opponent."
+                    response = status + ";" + msg
+                case "get-team":
+                    msg = self._connections[conn]["team"]
+                    response = "OK" + ";" + msg
+                case "welcome":
+                    msg = "\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n"
+                    response = "OK;" + msg
+                case "list-champs":
+                    champs = self._champs.champs_stats.__repr__()
+                    response = champs
+                case "pick-champ":
+                    champ_lst = self._champs.champions
+                    available = list(set(champ_lst) ^ set(self._taken_champs))
+                    if arg not in champ_lst:
+                        status = "ERROR"
+                        msg = "Available champs: [" + ', '.join(available) + "]"
                         response = status + ";" + msg
-                    case _:
-                        response = "ERROR;bad-request"
-                # Respond client
-                conn.sendall(response.encode())
-            except Exception:
-                conn.sendall(f"ERROR;Bad request [{data}]".encode())
+                    elif arg in available:
+                        msg = arg
+                        status = "OK"
+                        response = status + ";" + msg
+                        self._taken_champs.append(arg)
+                        self._connections[conn]["champs"].append(arg)
+                    else:
+                        status = "ERROR"
+                        msg = "Sorry, " + arg + " is taken enemy summoner!"
+                        response = status + ";" + msg
+                case "ready":
+                    print("Team: ", self._connections[conn]["team"], " with: ", self._connections[conn]["champs"])
+                    self._connections[conn]["ready"] = True
+                    status = "OK"
+                    msg = "You are now ready!"
+                    response = status + ";" + msg
+                case _:
+                    response = "ERROR;bad-request"
+            # Respond client
+            conn.sendall(response.encode())
         else:
             print(f"Closing: {conn.getsockname()}")
             conn.close()
