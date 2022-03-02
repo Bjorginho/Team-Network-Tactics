@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from src.network.core import Champion
+from network.core import Champion
 import json
 
 username = "admin"
