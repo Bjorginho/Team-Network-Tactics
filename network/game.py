@@ -2,8 +2,8 @@ from rich import print
 from rich.prompt import Prompt
 from rich.table import Table
 
-from network.champlistloader import load_some_champs
-from network.core import Champion, Match, Shape, Team
+from champlistloader import load_some_champs
+from core import Champion, Match, Shape, Team
 
 
 def print_available_champs(champions: dict[Champion]) -> None:

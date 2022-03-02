@@ -62,7 +62,15 @@ class Server:
                         print("Sending: ", response)
 
                     case "pick-champ":
-                        if arg not in self._taken_champs:
+                        champ_lst = self._champs.champions
+                        available = list(set(champ_lst) ^ set(self._taken_champs))
+                        print("All: ", champ_lst)
+                        print("Avalable: ", available)
+                        if arg not in champ_lst:
+                            status = "ERROR"
+                            msg = "Available champs: [" + ', '.join(available) + "]"
+                            response = status + ";" + msg
+                        elif arg in available:
                             msg = arg
                             status = "OK"
                             response = status + ";" + msg

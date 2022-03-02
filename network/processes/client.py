@@ -1,9 +1,10 @@
 from socket import socket
 import rich
-# from rich.prompt import Prompt
-# from rich.table import Table
-# from network.game import print_available_champs
+from rich.prompt import Prompt
 from rich.table import Table
+from rich.table import Table
+
+from network.game import print_available_champs
 
 
 def _input(prompt: str) -> str:
@@ -64,10 +65,14 @@ class Client:
                 request = _build_request(team=self._team, command="pick-champ", arg=champ)
                 self._send_request(request)
                 if data := self._get_response():
-                    if data[0] == "OK":
+                    status = data[0]
+                    msg = data[1]
+                    if status == "OK":
+                        # Ignore msg, just append champ
                         champions.append(champ)
                     else:
-                        print(data[1])
+                        # Print error message
+                        print(msg)
             else:
                 print("You've already picked this champ!")
 
