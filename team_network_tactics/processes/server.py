@@ -1,9 +1,10 @@
 from database import Champions
 from selectors import EVENT_READ, DefaultSelector
 from socket import socket, create_server
-import pickle
+
 from team_network_tactics.core import Match, Team
 from rich import print
+import json
 
 
 class Server:
@@ -20,6 +21,9 @@ class Server:
         self._taken_champs = []
         self._connections = {}
         self._match = None
+
+        # Responses
+        self._json_list = self.__load_json()
 
     def run(self):
         print("Waiting for connections...")
@@ -68,7 +72,7 @@ class Server:
                     msg = "\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n"
                     response = "OK;" + msg
                 case "list-champs":
-                    response = pickle.dumps(self._champs.champs_stats)
+                    response = json.dumps(self._json_list)
                 case "pick-champ":
                     champ_lst = self._champs.champions
                     available = list(set(champ_lst) ^ set(self._taken_champs))
@@ -102,15 +106,12 @@ class Server:
                         msg = "Waiting for other client."
                     response = status + ";" + msg
                 case "get-match-summary":
-                    response = pickle.dumps(self._match)
+                    response = json.dumps(self._match)
                 case _:
                     response = "ERROR;bad-request"
 
             # Respond client
-            if command == "get-match-summary" or command == "list-champs":      # Commands where we have to send object
-                conn.sendall(response)
-            else:
-                conn.sendall(response.encode())
+            conn.sendall(response.encode())
         else:
             print(f"Closing: {conn.getsockname()}")
             conn.close()
@@ -132,6 +133,13 @@ class Server:
         match.play()
 
         return match
+
+    def __load_json(self):
+        dict_champs = self._champs.champs_stats
+        for key in dict_champs:
+            # display objects content using __dict__
+            dict_champs[key] = dict_champs[key].__dict__
+        return dict_champs
 
 
 if __name__ == "__main__":

@@ -25,7 +25,8 @@ def print_available_champs(champions: dict[Champion]) -> None:
     print(available_champs)
 
 
-def input_champion(prompt: str, color: str,
+def input_champion(prompt: str,
+                   color: str,
                    champions: dict[Champion],
                    player1: list[str],
                    player2: list[str]) -> None:
@@ -116,8 +117,12 @@ def main() -> None:
         Team([champions[name] for name in player1]),
         Team([champions[name] for name in player2])
     )
+
+    print(match)
+    print()
     match.play()
-    # print(match)
+
+    print(match)
 
     # Print a summary
     print_match_summary(match)
