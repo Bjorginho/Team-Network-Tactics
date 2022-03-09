@@ -4,8 +4,8 @@ import rich
 from rich.prompt import Prompt
 from rich.table import Table
 from rich.table import Table
-from team_network_tactics.team_local_tactics import print_available_champs, print_match_summary
-from team_network_tactics.core import Champion
+from team_local_tactics import print_available_champs, print_match_summary
+from core import Champion
 import time
 import pickle
 
@@ -23,10 +23,9 @@ class Client:
         self._team = None
         self._champs = []
 
-        self._run()
+        self._find_match()
 
-    def _run(self):
-
+    def _find_match(self):
         request = _build_request(command="new-connection")
         self._send_request(request)
         print("Waiting for server to start game...")
@@ -54,6 +53,9 @@ class Client:
                 self._team = data[1]
             break
 
+        self._run()
+
+    def _run(self):
         print("-------------GAME STARTED-------------")
         print(f"You were assigned Team: [ {self._team} ]")
 
@@ -125,12 +127,9 @@ class Client:
         result = None
         while data := self._sock.recv(self._buffer_size):
             result = pickle.loads(data)
-            # result = json.loads(data.decode())
             break
 
-        # rich.print(result)
         print_match_summary(result)
-        # print(result)
 
     def _send_request(self, request: str):
         self._sock.send(request.encode())

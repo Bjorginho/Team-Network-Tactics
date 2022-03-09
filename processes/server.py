@@ -2,11 +2,10 @@ from database import Champions
 from selectors import EVENT_READ, DefaultSelector
 from socket import socket, create_server
 
-from team_network_tactics.core import Match, Team
+from core import Match, Team
 from rich import print
 import json
 import pickle
-
 
 class Server:
     def __init__(self, host: str, port: int, buffer_size: int = 1024):
@@ -57,6 +56,7 @@ class Server:
             request = data.decode().split(";")
             team, command, arg = request[0], request[1], request[2]
             response = ""
+
             match command:
                 case "new-connection":
                     if len(self._connections) == 2:

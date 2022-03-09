@@ -5,6 +5,7 @@
       <option name="ignoredIdentifiers">
         <list>
           <option value="int.read" />
+          <option value="network.core" />
         </list>
       </option>
     </inspection_tool>
