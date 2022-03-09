@@ -71,8 +71,11 @@ def print_match_summary(match: Match) -> None:
         # Populate the table
         for key in round:
             red, blue = key.split(', ')
-            round_summary.add_row(f'{red} {EMOJI[round[key].red]}',
-                                  f'{blue} {EMOJI[round[key].blue]}')
+            try:
+                round_summary.add_row(f'{red} {EMOJI[round[key].red]}',
+                                      f'{blue} {EMOJI[round[key].blue]}')
+            except KeyError:
+                print(f"Couldn't find EMOJI[round[key].COLOR]")
         print(round_summary)
         print('\n')
 
@@ -102,28 +105,28 @@ def main() -> None:
     print_available_champs(champions)
     print('\n')
 
-    player1 = []
-    player2 = []
+    player1, player2 = ["Asir", "Vain"], ["Cactus", "Luanne"]
 
     # Champion selection
-    for _ in range(2):
+    """for _ in range(2):
         input_champion('Player 1', 'red', champions, player1, player2)
-        input_champion('Player 2', 'blue', champions, player2, player1)
+        input_champion('Player 2', 'blue', champions, player2, player1)"""
 
     print('\n')
+
+
+    # print([champions[name] for name in player1])
+    # print([champions[name] for name in player2])
 
     # Match
     match = Match(
         Team([champions[name] for name in player1]),
         Team([champions[name] for name in player2])
     )
-
-    print(match)
-    print()
     match.play()
 
-    print(match)
-
+    # print("Rounds\n", match.rounds)
+    # print("Score\n", match.score)
     # Print a summary
     print_match_summary(match)
 

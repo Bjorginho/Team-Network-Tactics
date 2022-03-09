@@ -7,6 +7,7 @@ from rich.table import Table
 from team_network_tactics.team_local_tactics import print_available_champs, print_match_summary
 from team_network_tactics.core import Champion
 import time
+import pickle
 
 
 def _build_request(team: str = "", command: str = "", arg: str = ""):
@@ -73,10 +74,10 @@ class Client:
             json_data = json.loads(data.decode())
             for key in json_data:
                 dict = json_data[key]
-                name = dict["_name"]
-                rock = dict["_rock"]
-                paper = dict["_paper"]
-                scissors = 1 - rock - paper
+                name = dict["name"]
+                rock = dict["rock"]
+                paper = dict["paper"]
+                scissors = round(1 - rock - paper, 2)
                 json_data[key] = Champion(name, rock, paper, scissors)
 
             print_available_champs(json_data)
@@ -123,13 +124,13 @@ class Client:
         self._send_request(request)
         result = None
         while data := self._sock.recv(self._buffer_size):
-            # result = pickle.loads(data)
-            result = json.loads(data.decode())
+            result = pickle.loads(data)
+            # result = json.loads(data.decode())
             break
 
         # rich.print(result)
-        # print_match_summary(result)
-        print(result)
+        print_match_summary(result)
+        # print(result)
 
     def _send_request(self, request: str):
         self._sock.send(request.encode())

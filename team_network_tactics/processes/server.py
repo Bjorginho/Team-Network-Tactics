@@ -5,6 +5,7 @@ from socket import socket, create_server
 from team_network_tactics.core import Match, Team
 from rich import print
 import json
+import pickle
 
 
 class Server:
@@ -22,8 +23,8 @@ class Server:
         self._connections = {}
         self._match = None
 
-        # Responses
-        self._json_list = self.__load_json()
+        self._champs_stats = self._champs.champs_stats
+        self._dict_champ_stats = self.__load_champ_stats()
 
     def run(self):
         print("Waiting for connections...")
@@ -72,7 +73,7 @@ class Server:
                     msg = "\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n"
                     response = "OK;" + msg
                 case "list-champs":
-                    response = json.dumps(self._json_list)
+                    response = json.dumps(self._dict_champ_stats)
                 case "pick-champ":
                     champ_lst = self._champs.champions
                     available = list(set(champ_lst) ^ set(self._taken_champs))
@@ -106,12 +107,16 @@ class Server:
                         msg = "Waiting for other client."
                     response = status + ";" + msg
                 case "get-match-summary":
-                    response = json.dumps(self._match)
+                    # response = json.dumps(self._match)
+                    response = pickle.dumps(self._match)
                 case _:
                     response = "ERROR;bad-request"
 
             # Respond client
-            conn.sendall(response.encode())
+            if command == "get-match-summary":
+                conn.sendall(response)
+            else:
+                conn.sendall(response.encode())
         else:
             print(f"Closing: {conn.getsockname()}")
             conn.close()
@@ -126,6 +131,8 @@ class Server:
             elif self._connections[conn]["team"] == "blue":
                 player2 = self._connections[conn]["champs"]
 
+        # print(self._champs.champs_stats)
+
         match = Match(
             Team([self._champs.champs_stats[name] for name in player1]),
             Team([self._champs.champs_stats[name] for name in player2])
@@ -134,12 +141,19 @@ class Server:
 
         return match
 
-    def __load_json(self):
-        dict_champs = self._champs.champs_stats
-        for key in dict_champs:
+    def __load_champ_stats(self):
+        d = {}
+
+        for champ in self._champs_stats:
             # display objects content using __dict__
-            dict_champs[key] = dict_champs[key].__dict__
-        return dict_champs
+            dict = self._champs_stats[champ].__dict__
+            name = dict["_name"]
+            rock = dict["_rock"]
+            paper = dict["_paper"]
+            scissors = round(1 - rock - paper, 2)
+
+            d[champ] = {"name": name, "rock": rock, "paper": paper, "scissors": scissors}
+        return d
 
 
 if __name__ == "__main__":
