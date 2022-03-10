@@ -87,6 +87,11 @@ class Server:
                     response = "OK;" + "\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n"
                 case "list-champs":
                     response = json.dumps(self._dict_champ_stats)
+                case "get-turn":
+                    if len(self._taken_champs) % 2 == 0:
+                        response = "OK;red"
+                    else:
+                        response = "OK;blue"
                 case "pick-champ":
                     champ_lst = (self._champions.keys())
                     available = list(set(champ_lst) ^ set(self._taken_champs))
@@ -149,6 +154,11 @@ class Server:
             "score": match.score
         }
         self.__post_match(match_obj)
+
+        # Reset data
+        self._taken_champs = []
+        for conn in self._connections:
+            self._connections[conn]["champs"] = []
         return match
 
     def __load_champ_stats(self):

@@ -24,6 +24,7 @@ class Client:
         Wait until enemy opponent connected.
 
         """
+        print(f"Welcome {self._name}\nPlease wait for game to start.")
         self._build_and_send(command="new-connection", arg=self._name)
 
         response, data = self._get_response()
@@ -75,24 +76,31 @@ class Client:
         print_available_champs(json_data)
 
         print("\n")
-        #  Pick champions
-        while len(self._champs) < 2:
-            champ = input("Pick champ: ")
-            if champ not in self._champs:
-                self._build_and_send(team=self._team, command="pick-champ", arg=champ)
-                if data := self._get_response():
-                    status = data[0]
-                    msg = data[1]
-                    if status == "OK":
-                        # Ignore msg, just append champ
-                        self._champs.append(champ)
-                    else:
-                        # Print error message
-                        print(msg)
-            else:
-                print("You've already picked this champ!")
 
-        print("Your champions: ", self._champs)
+        #  Pick champions
+        print("Champion select, pick champ or wait for other player. ")
+        while len(self._champs) < 2:
+            self._build_and_send(team=self._team, command="get-turn")
+            _, turn = self._get_response()
+            if turn == self._team:
+                while champ := input("Pick champ: "):
+                    if champ not in self._champs:
+                        self._build_and_send(team=self._team, command="pick-champ", arg=champ)
+                        if data := self._get_response():
+                            status = data[0]
+                            msg = data[1]
+                            if status == "OK":
+                                # Ignore msg, just append champ
+                                self._champs.append(champ)
+                                print(f"You picked {champ}\nWaiting for enemy to pick champ.")
+                                break
+                            else:
+                                # Print error message
+                                print(msg)
+                    else:
+                        print("You've already picked this champ!")
+
+        print("You picked ", " and ".join(self._champs))
 
         self._build_and_send(team=self._team, command="ready")
 
@@ -134,6 +142,8 @@ class Client:
             case _:
                 print("Sorry you lost, better luck next time!")
 
+        print("Thank you for playing!\n"
+              "This is only a demo (MVP) of Team-Network-Tactics so more functions will come sooner or later!")
 
     def _build_and_send(self, team: str = "", command: str = "", arg: str = ""):
         request = team + ";" + command + ";" + arg
@@ -146,5 +156,5 @@ class Client:
 
 
 if __name__ == "__main__":
-    player_name = input("You are soon going to play Team Network Tactics!\nBut first, input your name here: ")
+    player_name = input("You are soon going to play Team Network Tactics!\nBut first, input your name here:\n")
     Client(name=player_name)
