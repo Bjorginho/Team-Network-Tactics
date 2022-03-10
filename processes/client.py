@@ -19,6 +19,11 @@ class Client:
         self._find_match()
 
     def _find_match(self):
+        """
+        This method sends request to server to join a lobby.
+        Wait until enemy opponent connected.
+
+        """
         self._build_and_send(command="new-connection", arg=self._name)
 
         response, data = self._get_response()
@@ -46,6 +51,7 @@ class Client:
         self._run()
 
     def _run(self):
+
         print("\n               GAME STARTED\n")
         print(f"You were assigned team {self._team}")
 
@@ -105,12 +111,29 @@ class Client:
                 continue
 
         self._build_and_send(team=self._team, command="get-match-summary")
-        result = None
-        while data := self._sock.recv(self._buffer_size):
-            result = pickle.loads(data)
-            break
 
-        print_match_summary(result)
+        match_bytes = self._sock.recv(self._buffer_size)
+        match = pickle.loads(match_bytes)
+
+        print_match_summary(match)
+
+        red, blue = match.score
+
+        if red < blue:
+            winner = "blue"
+        elif red > blue:
+            winner = "red"
+        else:
+            winner = "draw"
+
+        match winner:
+            case self._team:
+                print("Congratulations you won!")
+            case "draw":
+                print("It was a draw")
+            case _:
+                print("Sorry you lost, better luck next time!")
+
 
     def _build_and_send(self, team: str = "", command: str = "", arg: str = ""):
         request = team + ";" + command + ";" + arg
