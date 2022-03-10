@@ -1,18 +1,17 @@
-import json
-from socket import socket
-import rich
+from socket import create_connection
 from team_local_tactics import print_available_champs, print_match_summary
 from core import Champion
 import time
 import pickle
+import rich
+import json
 
 
 class Client:
     def __init__(self, name: str, buffer_size: int = 1024):
-        self._sock = socket()
+        self._sock = create_connection(('localhost', 5550))
         self._buffer_size = buffer_size
         self._name = name
-        self._sock.connect(('localhost', 5550))
 
         self._team = None
         self._champs = []
@@ -64,8 +63,7 @@ class Client:
         # Parse data
         for key in json_data:
             dict = json_data[key]
-            name, rock, paper = dict["name"], dict["rock"], dict["paper"]
-            scissors = round(1 - rock - paper, 2)
+            name, rock, paper, scissors = dict["name"], dict["rock"], dict["paper"], dict["scissors"]
             json_data[key] = Champion(name, rock, paper, scissors)
 
         print_available_champs(json_data)

@@ -15,6 +15,7 @@ class Server:
         self._buffer_size = buffer_size
         self._connections = {}
 
+        # Connect to database
         self._db_socket = create_connection(('localhost', 5555))
         self._champions = self.__get_champs()
         self._dict_champ_stats = self.__load_champ_stats()
@@ -25,13 +26,20 @@ class Server:
     def __get_champs(self):
         # Request champions dictionary from Database Server
         request = "get-champs;"
+        print("DB [SENDING] Requesting champions from database socket")
         self._db_socket.sendall(request.encode())
         data = self._db_socket.recv(self._buffer_size)
         champs = pickle.loads(data)
+        if champs is not None:
+            print("DB [RECEIVED] Received champions from database socket")
         return champs
 
-    def __post_match(self):
-        pass
+    def __post_match(self, match):
+        request = "post-match;"
+        self._db_socket.sendall(request.encode())
+        print("DB [SENDING] Sending match to database socket")
+        match_encoded = pickle.dumps(match)
+        self._db_socket.sendall(match_encoded)
 
     def run(self):
         print("Waiting for connections...")
@@ -46,7 +54,7 @@ class Server:
 
     def _accept(self, sock: socket):
         conn, address = sock.accept()
-        print(f'Accepted: {address}')
+        print(f'Client [ACCEPTED]: {address}')
         conn.setblocking(False)
         self._sel.register(conn, EVENT_READ)
         self.__register_and_assign_team(conn)
@@ -60,10 +68,9 @@ class Server:
 
     def _handle(self, conn: socket):
         if data := conn.recv(self._buffer_size):
-            print("Request: ", data.decode())
+            print("Client [REQUEST] ", data.decode())
             request = data.decode().split(";")
             team, command, arg = request[0], request[1], request[2]
-            response = ""
 
             match command:
                 case "new-connection":
@@ -71,39 +78,26 @@ class Server:
                     response = "OK;" + self._connections[conn]["team"]
                 case "other-ready":
                     if len(self._connections) == 2:
-                        status = "OK"
-                        msg = "Two players connected"
-                        print(self._connections)
+                        response = "OK;Two players connected"
                     else:
-                        status = "ERROR"
-                        msg = "Waiting for opponent."
-                    response = status + ";" + msg
+                        response = "ERROR;Waiting for opponent."
                 case "get-team":
-                    msg = self._connections[conn]["team"]
-                    response = "OK" + ";" + msg
+                    response = "OK;" + self._connections[conn]["team"]
                 case "welcome":
-                    msg = "\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n"
-                    response = "OK;" + msg
+                    response = "OK;" + "\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n"
                 case "list-champs":
                     response = json.dumps(self._dict_champ_stats)
                 case "pick-champ":
-                    # champ_lst = self._champs.champions
                     champ_lst = (self._champions.keys())
                     available = list(set(champ_lst) ^ set(self._taken_champs))
                     if arg not in champ_lst:
-                        status = "ERROR"
-                        msg = "Available champs: [" + ', '.join(available) + "]"
-                        response = status + ";" + msg
+                        response = "ERROR;Available champs: [" + ', '.join(available) + "]"
                     elif arg in available:
-                        msg = arg
-                        status = "OK"
-                        response = status + ";" + msg
+                        response = "OK;" + arg
                         self._taken_champs.append(arg)
                         self._connections[conn]["champs"].append(arg)
                     else:
-                        status = "ERROR"
-                        msg = "Sorry, " + arg + " is taken enemy summoner!"
-                        response = status + ";" + msg
+                        response = "ERROR;Sorry, " + arg + " is taken enemy summoner!"
                 case "ready":
                     self._connections[conn]["ready"] = True
                     count = 0
@@ -111,37 +105,36 @@ class Server:
                         if self._connections[connection]["ready"]:
                             count += 1
                     if count == 2:
-                        status = "OK"
-                        msg = "Both ready"
+                        response = "OK;Both ready"
                         if self._match is None:
                             self._match = self._simulate_match()
                     else:
-                        status = "ERROR"
-                        msg = "Waiting for other client."
-                    response = status + ";" + msg
+                        response = "ERROR;Waiting for other client."
                 case "get-match-summary":
                     response = pickle.dumps(self._match)
                 case _:
                     response = "ERROR;bad-request"
-
             # Respond client
             if command == "get-match-summary":
                 conn.sendall(response)
             else:
                 conn.sendall(response.encode())
         else:
-            print(f"Closing: {conn.getsockname()}")
+            print(f"Client [CLOSING]: {conn.getsockname()}")
             conn.close()
             self._sel.unregister(conn)
 
     def _simulate_match(self):
 
+        p1_name, p2_name = "", ""
         player1, player2 = [], []
         for conn in self._connections:
             if self._connections[conn]["team"] == "red":
                 player1 = self._connections[conn]["champs"]
+                p1_name = self._connections[conn]["name"]
             elif self._connections[conn]["team"] == "blue":
                 player2 = self._connections[conn]["champs"]
+                p2_name = self._connections[conn]["name"]
 
         match = Match(
             Team([self._champions[name] for name in player1]),
@@ -149,6 +142,13 @@ class Server:
         )
         match.play()
 
+        match_obj = {
+            "red":
+                {"name": p1_name, "champs": player1},
+            "blue": {"name": p2_name, "champs": player2},
+            "score": match.score
+        }
+        self.__post_match(match_obj)
         return match
 
     def __load_champ_stats(self):
