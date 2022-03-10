@@ -13,13 +13,13 @@ class Server:
         self._sel = DefaultSelector()
         self._sel.register(self._sock, EVENT_READ, True)
         self._buffer_size = buffer_size
+        self._connections = {}
 
         self._db_socket = create_connection(('localhost', 5555))
-        self._champs_stats = self.__get_champs()
+        self._champions = self.__get_champs()
         self._dict_champ_stats = self.__load_champ_stats()
 
         self._taken_champs = []
-        self._connections = {}
         self._match = None
 
     def __get_champs(self):
@@ -67,9 +67,13 @@ class Server:
 
             match command:
                 case "new-connection":
+                    self._connections[conn]["name"] = arg
+                    response = "OK;" + self._connections[conn]["team"]
+                case "other-ready":
                     if len(self._connections) == 2:
                         status = "OK"
                         msg = "Two players connected"
+                        print(self._connections)
                     else:
                         status = "ERROR"
                         msg = "Waiting for opponent."
@@ -84,7 +88,7 @@ class Server:
                     response = json.dumps(self._dict_champ_stats)
                 case "pick-champ":
                     # champ_lst = self._champs.champions
-                    champ_lst = (self._champs_stats.keys())
+                    champ_lst = (self._champions.keys())
                     available = list(set(champ_lst) ^ set(self._taken_champs))
                     if arg not in champ_lst:
                         status = "ERROR"
@@ -140,8 +144,8 @@ class Server:
                 player2 = self._connections[conn]["champs"]
 
         match = Match(
-            Team([self._champs_stats[name] for name in player1]),
-            Team([self._champs_stats[name] for name in player2])
+            Team([self._champions[name] for name in player1]),
+            Team([self._champions[name] for name in player2])
         )
         match.play()
 
@@ -150,9 +154,9 @@ class Server:
     def __load_champ_stats(self):
         d = {}
 
-        for champ in self._champs_stats:
+        for champ in self._champions:
             # display objects content using __dict__
-            dict = self._champs_stats[champ].__dict__
+            dict = self._champions[champ].__dict__
             name = dict["_name"]
             rock = dict["_rock"]
             paper = dict["_paper"]
