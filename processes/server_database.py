@@ -50,7 +50,6 @@ class DatabaseServer:
                     request = conn.recv(self._buffer_size)
                     match = pickle.loads(request)
                     print("[SENDING] Match to database socket")
-                    print(match)
                     self._db_match_history.post_match(
                         player1=match["red"],
                         player2=match["blue"],

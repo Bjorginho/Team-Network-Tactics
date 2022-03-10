@@ -125,9 +125,6 @@ def main() -> None:
     )
     match.play()
 
-    # print("Rounds\n", match.rounds)
-    # print("Score\n", match.score)
-    # Print a summary
     print_match_summary(match)
 
 
