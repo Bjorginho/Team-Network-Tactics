@@ -1,6 +1,5 @@
-from database import Champions
+from socket import socket, create_server, create_connection
 from selectors import EVENT_READ, DefaultSelector
-from socket import socket, create_server
 from core import Match, Team
 from rich import print
 import json
@@ -15,15 +14,24 @@ class Server:
         self._sel.register(self._sock, EVENT_READ, True)
         self._buffer_size = buffer_size
 
-        self._champs = Champions()
-        self._match_history = None
+        self._db_socket = create_connection(('localhost', 5555))
+        self._champs_stats = self.__get_champs()
+        self._dict_champ_stats = self.__load_champ_stats()
 
         self._taken_champs = []
         self._connections = {}
         self._match = None
 
-        self._champs_stats = self._champs.champs_stats
-        self._dict_champ_stats = self.__load_champ_stats()
+    def __get_champs(self):
+        # Request champions dictionary from Database Server
+        request = "get-champs;"
+        self._db_socket.sendall(request.encode())
+        data = self._db_socket.recv(self._buffer_size)
+        champs = pickle.loads(data)
+        return champs
+
+    def __post_match(self):
+        pass
 
     def run(self):
         print("Waiting for connections...")
@@ -44,7 +52,7 @@ class Server:
         self.__register_and_assign_team(conn)
 
     def __register_and_assign_team(self, conn: socket):
-        if len(self._connections) == 0:
+        if len(self._connections) % 2 == 0:
             color = "red"
         else:
             color = "blue"
@@ -75,7 +83,8 @@ class Server:
                 case "list-champs":
                     response = json.dumps(self._dict_champ_stats)
                 case "pick-champ":
-                    champ_lst = self._champs.champions
+                    # champ_lst = self._champs.champions
+                    champ_lst = (self._champs_stats.keys())
                     available = list(set(champ_lst) ^ set(self._taken_champs))
                     if arg not in champ_lst:
                         status = "ERROR"
@@ -130,11 +139,9 @@ class Server:
             elif self._connections[conn]["team"] == "blue":
                 player2 = self._connections[conn]["champs"]
 
-        # print(self._champs.champs_stats)
-
         match = Match(
-            Team([self._champs.champs_stats[name] for name in player1]),
-            Team([self._champs.champs_stats[name] for name in player2])
+            Team([self._champs_stats[name] for name in player1]),
+            Team([self._champs_stats[name] for name in player2])
         )
         match.play()
 

@@ -2,6 +2,7 @@ from socket import create_server, SOL_SOCKET, SO_REUSEADDR
 from database import Champions
 import pickle
 
+
 class DatabaseServer:
 
     def __init__(self, host: str, port: int, buffer_size: int = 1024):
@@ -29,7 +30,7 @@ class DatabaseServer:
                     pass
                 case _:
                     pass
-            # conn.close()
+            conn.close()
 
 
 if __name__ == "__main__":
