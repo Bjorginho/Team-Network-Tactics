@@ -1,11 +1,11 @@
 from database import Champions
 from selectors import EVENT_READ, DefaultSelector
 from socket import socket, create_server
-
 from core import Match, Team
 from rich import print
 import json
 import pickle
+
 
 class Server:
     def __init__(self, host: str, port: int, buffer_size: int = 1024):
@@ -107,7 +107,6 @@ class Server:
                         msg = "Waiting for other client."
                     response = status + ";" + msg
                 case "get-match-summary":
-                    # response = json.dumps(self._match)
                     response = pickle.dumps(self._match)
                 case _:
                     response = "ERROR;bad-request"

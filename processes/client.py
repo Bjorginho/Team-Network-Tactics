@@ -1,9 +1,6 @@
 import json
 from socket import socket
 import rich
-from rich.prompt import Prompt
-from rich.table import Table
-from rich.table import Table
 from team_local_tactics import print_available_champs, print_match_summary
 from core import Champion
 import time
