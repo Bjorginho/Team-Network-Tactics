@@ -1,13 +1,18 @@
 from pymongo import MongoClient
-from core import Champion, Match
-import json
+from core import Champion
+"""
+These classes gets data (champions) and post data (match history) to mongoDB database, methods are called by the database server socket. 
+"""
 
+# Set up username, password and cluster_name
 username = "admin"
 password = "admin123"
 cluster_name = "cluster0"
 
+# Connect to MongoDB
 CLUSTER = MongoClient(
     f"mongodb+srv://{username}:{password}@{cluster_name}.igyfh.mongodb.net/TNT?retryWrites=true&w=majority")
+# Get database from cluster
 DB = CLUSTER["TNT"]
 
 

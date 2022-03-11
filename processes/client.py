@@ -8,6 +8,10 @@ import json
 
 
 class Client:
+    """
+    Client that represent a player in Team Network Tactics!
+    Takes in client-/ playername
+    """
     def __init__(self, name: str, buffer_size: int = 1024):
         self._sock = create_connection(('localhost', 5550))
         self._buffer_size = buffer_size
@@ -52,6 +56,10 @@ class Client:
         self._run()
 
     def _run(self):
+        """
+        When server has found two clients, this method is called from client side.
+        This method sends request and handle responses from game server.
+        """
 
         print("\n               GAME STARTED\n")
         print(f"You were assigned team {self._team}")
@@ -146,10 +154,25 @@ class Client:
               "This is only a demo (MVP) of Team-Network-Tactics so more functions will come sooner or later!")
 
     def _build_and_send(self, team: str = "", command: str = "", arg: str = ""):
+        """
+        Build and send a request to server
+        Parameters
+        ----------
+        team: red or blue
+        command: server command
+        arg: argument ("" if None)
+
+        """
         request = team + ";" + command + ";" + arg
         self._sock.send(request.encode())
 
     def _get_response(self):
+        """
+        Gets and handles response from server.
+        Returns status (OK or ERROR) and message/ data 
+        -------
+
+        """
         response = self._sock.recv(self._buffer_size).decode()
         status, msg = response.split(";")
         return status, msg

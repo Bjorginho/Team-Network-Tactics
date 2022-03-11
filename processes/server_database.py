@@ -5,6 +5,11 @@ import pickle
 
 
 class DatabaseServer:
+    """
+    Socket that controls database.py and communicates with main server,
+    takes care of MongoDB that stores champions and match histories.
+
+    """
 
     def __init__(self, host: str, port: int, buffer_size: int = 1024):
         self._sock = create_server((host, port))
@@ -19,6 +24,9 @@ class DatabaseServer:
         self._db_match_history = MatchHistory()
 
     def run(self):
+        """
+        Run this to start server
+        """
         print(f"Listening on {self._sock.getsockname()}")
         while True:
             events = self._sel.select()
@@ -35,7 +43,15 @@ class DatabaseServer:
         self._sel.register(conn, EVENT_READ)
 
     def _handle(self, conn: socket):
+        """
+        Handle requests from game server
+        Has two commands: "get-champs" and "post-match"
 
+        ----------
+        conn: server
+        -------
+
+        """
         if data := conn.recv(self._buffer_size):
             print(f'[RECEIVED] Request from [{conn}]')
 
@@ -59,7 +75,6 @@ class DatabaseServer:
             print(f"Client [CLOSING]: {conn.getsockname()}")
             conn.close()
             self._sel.unregister(conn)
-
 
 
 if __name__ == "__main__":

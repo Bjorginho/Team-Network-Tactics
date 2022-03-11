@@ -7,6 +7,14 @@ import pickle
 
 
 class Server:
+    """
+    Main server of Team-Network-Tactics
+
+    This server is a socket that communicates both with clients and database server.
+    Runs on ('localhost', 5550)
+
+    Uses selectors to handle and accept clients.
+    """
     def __init__(self, host: str, port: int, buffer_size: int = 1024):
         self._sock = create_server((host, port))
         self._sock.setblocking(False)
@@ -20,28 +28,18 @@ class Server:
         self._champions = self.__get_champs()
         self._dict_champ_stats = self.__load_champ_stats()
 
+        # Game round
         self._taken_champs = []
         self._match = None
 
-    def __get_champs(self):
-        # Request champions dictionary from Database Server
-        request = "get-champs;"
-        print("DB [SENDING] Requesting champions from database socket")
-        self._db_socket.sendall(request.encode())
-        data = self._db_socket.recv(self._buffer_size)
-        champs = pickle.loads(data)
-        if champs is not None:
-            print("DB [RECEIVED] Received champions from database socket")
-        return champs
-
-    def __post_match(self, match):
-        request = "post-match;"
-        self._db_socket.sendall(request.encode())
-        print("DB [SENDING] Sending match to database socket")
-        match_encoded = pickle.dumps(match)
-        self._db_socket.sendall(match_encoded)
-
     def run(self):
+        """
+        Main method of server.
+        This method runs the server and takes care of handling socket by using selectors.
+        Either handle or accept incoming socket.
+
+        Called from outside of class.
+        """
         print("Waiting for connections...")
         while True:
             events = self._sel.select()  # Sockets that are ready to be handled
@@ -52,7 +50,43 @@ class Server:
                     else:
                         self._handle(key.fileobj)
 
+    def __get_champs(self):
+        """
+        This method request champions from server database
+        Returns champion dictionary
+        -------
+
+        """
+        request = "get-champs;"
+        print("DB [SENDING] Requesting champions from database socket")
+        self._db_socket.sendall(request.encode())
+        data = self._db_socket.recv(self._buffer_size)
+        champs = pickle.loads(data)
+        if champs is not None:
+            print(f"DB [RECEIVED] Received {len(champs)} champions from database socket")
+        return champs
+
+    def __post_match(self, match):
+        """
+        This method takes in the match object and sends it to the database socket, which then posts it to database on MongoDB
+        Parameters: match - match object
+
+        """
+        request = "post-match;"
+        self._db_socket.sendall(request.encode())
+        print("DB [SENDING] Sending match to database socket")
+        match_encoded = pickle.dumps(match)
+        self._db_socket.sendall(match_encoded)
+
     def _accept(self, sock: socket):
+        """
+        Accept new socket (client)
+        Parameters
+        ----------
+        sock: Client
+        -------
+
+        """
         conn, address = sock.accept()
         print(f'Client [ACCEPTED]: {address}')
         conn.setblocking(False)
@@ -60,6 +94,16 @@ class Server:
         self.__register_and_assign_team(conn)
 
     def __register_and_assign_team(self, conn: socket):
+        """
+        Registers the new socket and assigns it a team.
+        Parameters
+        ----------
+        conn: New connection
+
+        Returns
+        -------
+
+        """
         if len(self._connections) % 2 == 0:
             color = "red"
         else:
@@ -67,6 +111,17 @@ class Server:
         self._connections[conn] = {"team": color, "champs": [], "ready": False}
 
     def _handle(self, conn: socket):
+        """
+        Handles a request from client.
+
+        Parameters
+        ----------
+        conn: Client
+
+        Returns response to client.
+        -------
+
+        """
         if data := conn.recv(self._buffer_size):
             print("Client [REQUEST] ", data.decode())
             request = data.decode().split(";")
@@ -130,7 +185,13 @@ class Server:
             self._sel.unregister(conn)
 
     def _simulate_match(self):
+        """
+        When two clients are ready, simulate game.
+        After game is finished, reset taken champs and connections.
+        Returns game (with result)
+        -------
 
+        """
         p1_name, p2_name = "", ""
         player1, player2 = [], []
         for conn in self._connections:
@@ -150,7 +211,8 @@ class Server:
         match_obj = {
             "red":
                 {"name": p1_name, "champs": player1},
-            "blue": {"name": p2_name, "champs": player2},
+            "blue":
+                {"name": p2_name, "champs": player2},
             "score": match.score
         }
         self.__post_match(match_obj)
@@ -162,6 +224,15 @@ class Server:
         return match
 
     def __load_champ_stats(self):
+        """
+        Parse and encode json data.
+        Data: Champions dictionary.
+        Used in command: "list-champs"
+
+        Returns dictionary that is JSON serializable.
+        -------
+
+        """
         d = {}
 
         for champ in self._champions:
@@ -177,5 +248,8 @@ class Server:
 
 
 if __name__ == "__main__":
+    """
+    Run this class (after server_database.py) to start main server. 
+    """
     s = Server('localhost', 5550)
     s.run()
