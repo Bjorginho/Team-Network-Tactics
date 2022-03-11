@@ -169,7 +169,7 @@ class Client:
     def _get_response(self):
         """
         Gets and handles response from server.
-        Returns status (OK or ERROR) and message/ data 
+        Returns status (OK or ERROR) and message/ data
         -------
 
         """
